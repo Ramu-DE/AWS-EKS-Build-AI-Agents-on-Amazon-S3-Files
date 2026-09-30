@@ -1,0 +1,63 @@
+# workflow-streamer — streams live workflow status to the UI over HTTP.
+# NOT a file-using component (no /var/contracts mount). Agents POST status updates
+# to WORKFLOW_STREAMER_URL and it relays them to the frontend.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workflow-streamer-config
+  namespace: contracts
+data:
+  PORT: "8001"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-streamer
+  namespace: contracts
+  labels:
+    app: workflow-streamer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-streamer
+  template:
+    metadata:
+      labels:
+        app: workflow-streamer
+    spec:
+      serviceAccountName: workflow-streamer
+      containers:
+        - name: workflow-streamer
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-workflow-streamer:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: workflow-streamer-config
+                  key: PORT
+            - name: AWS_REGION
+              value: us-west-2
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi

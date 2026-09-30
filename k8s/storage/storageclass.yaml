@@ -1,0 +1,24 @@
+# StorageClass for Amazon S3 Files, provisioned through the EFS CSI driver.
+#
+# S3 Files exposes an S3 bucket as a POSIX/NFS file system. Volumes created from
+# this class are provisioned via an S3 Files access point (provisioningMode:
+# s3files-ap) rooted at basePath, and owned by uid/gid 33 (www-data) so they line
+# up with the application/agent runtime user.
+#
+# Replace fileSystemId with your own S3 Files file system ID.
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: s3files-sc
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: s3files-ap
+  fileSystemId: fs-0fdd210641db7f124   # <-- replace with your S3 Files file system ID
+  basePath: /contracts                 # access-point root inside the file system
+  directoryPerms: "777"
+  ensureUniqueDirectory: "false"
+  subPathPattern: "."
+  uid: "33"                            # www-data
+  gid: "33"
+reclaimPolicy: Delete
+volumeBindingMode: Immediate

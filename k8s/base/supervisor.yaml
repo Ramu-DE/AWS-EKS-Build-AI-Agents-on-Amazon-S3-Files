@@ -1,0 +1,59 @@
+# supervisor — the Orchestrator. Polls SQS for new-contract events, reads the
+# contract from the shared volume, and coordinates the other agents over HTTP (A2A).
+# Runs as uid/gid 33 to match S3 Files file ownership. Uses IRSA (strands-agent-sa)
+# for SQS + Bedrock access.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: supervisor
+  namespace: contracts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: supervisor
+  template:
+    metadata:
+      labels:
+        app: supervisor
+    spec:
+      serviceAccountName: strands-agent-sa
+      securityContext:
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+      containers:
+        - name: supervisor
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-supervisor:latest
+          imagePullPolicy: Always
+          env:
+            - name: SQS_QUEUE_URL
+              value: https://sqs.us-west-2.amazonaws.com/198645490240/s3files-contract-validation
+            - name: AWS_REGION
+              value: us-west-2
+            - name: AGENT_MODEL
+              value: us.amazon.nova-pro-v1:0
+            - name: VALIDATOR_URL
+              value: http://validator-svc.contracts.svc.cluster.local:8001
+            - name: RISK_ASSESSOR_URL
+              value: http://risk-assessor-svc.contracts.svc.cluster.local:8002
+            - name: BENCHMARK_URL
+              value: http://benchmark-svc.contracts.svc.cluster.local:8003
+            - name: WORKFLOW_STREAMER_URL
+              value: http://workflow-streamer.contracts.svc.cluster.local:8001
+            - name: POLL_INTERVAL
+              value: "5"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: s3-contracts
+              mountPath: /var/contracts
+      volumes:
+        - name: s3-contracts
+          persistentVolumeClaim:
+            claimName: s3-contracts-pvc

@@ -1,0 +1,56 @@
+# risk-assessor — scores contract risk using Amazon Bedrock.
+# Mounts the shared volume to read contracts; exposes an agent server on 8002
+# with readiness gated on /.well-known/agent.json.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: risk-assessor
+  namespace: contracts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: risk-assessor
+  template:
+    metadata:
+      labels:
+        app: risk-assessor
+    spec:
+      serviceAccountName: strands-agent-sa
+      containers:
+        - name: risk-assessor
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-risk-assessor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8002
+          env:
+            - name: AWS_REGION
+              value: us-west-2
+            - name: AGENT_MODEL
+              value: us.amazon.nova-pro-v1:0
+            - name: PORT
+              value: "8002"
+            - name: HOST
+              value: 0.0.0.0
+            - name: HTTP_URL
+              value: http://risk-assessor-svc.contracts.svc.cluster.local:8002
+          readinessProbe:
+            httpGet:
+              path: /.well-known/agent.json
+              port: 8002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          volumeMounts:
+            - name: s3-contracts
+              mountPath: /var/contracts
+      volumes:
+        - name: s3-contracts
+          persistentVolumeClaim:
+            claimName: s3-contracts-pvc

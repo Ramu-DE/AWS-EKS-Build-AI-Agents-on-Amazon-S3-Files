@@ -1,0 +1,93 @@
+# Services wiring the components together.
+#
+# - contract-frontend is a LoadBalancer (external entry point; NLB), forwarding
+#   :80 to the frontend container's :3000.
+# - contract-app is an internal ClusterIP the frontend talks to.
+# - The agent services (validator-svc, risk-assessor-svc, benchmark-svc) are the
+#   A2A endpoints the supervisor calls; their names match the *_URL env vars.
+# - workflow-streamer is the internal endpoint agents POST status updates to.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: contract-frontend
+  namespace: contracts
+spec:
+  type: LoadBalancer
+  selector:
+    app: contract-frontend
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: contract-app
+  namespace: contracts
+spec:
+  type: ClusterIP
+  selector:
+    app: contract-app
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: validator-svc
+  namespace: contracts
+spec:
+  type: ClusterIP
+  selector:
+    app: validator
+  ports:
+    - port: 8001
+      targetPort: 8001
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: risk-assessor-svc
+  namespace: contracts
+spec:
+  type: ClusterIP
+  selector:
+    app: risk-assessor
+  ports:
+    - port: 8002
+      targetPort: 8002
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: benchmark-svc
+  namespace: contracts
+spec:
+  type: ClusterIP
+  selector:
+    app: benchmark
+  ports:
+    - port: 8003
+      targetPort: 8003
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-streamer
+  namespace: contracts
+spec:
+  type: ClusterIP
+  selector:
+    app: workflow-streamer
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+      protocol: TCP

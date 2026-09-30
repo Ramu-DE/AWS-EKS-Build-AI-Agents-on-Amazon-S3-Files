@@ -1,0 +1,60 @@
+# contract-app — PHP web backend. PRODUCER of contract/approval files.
+# Mounts the shared S3 Files volume at /var/contracts and writes output there
+# (CONTRACT_OUTPUT_DIR / APPROVAL_DATA_DIR), which every agent can then read.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-app
+  namespace: contracts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contract-app
+  template:
+    metadata:
+      labels:
+        app: contract-app
+    spec:
+      serviceAccountName: contract-app
+      containers:
+        - name: contract-app
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-contract-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: BASE_PATH
+              value: /app
+            - name: QUOTE_DATA_DIR
+              value: /var/www/html/quotes        # local, ephemeral
+            - name: CONTRACT_DATA_DIR
+              value: /var/www/html/contracts     # local, ephemeral
+            - name: CONTRACT_OUTPUT_DIR
+              value: /var/contracts              # SHARED (S3 Files)
+            - name: APPROVAL_DATA_DIR
+              value: /var/contracts/approvals    # SHARED (S3 Files)
+          livenessProbe:
+            httpGet:
+              path: /healthz.php
+              port: 80
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz.php
+              port: 80
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: s3-contracts
+              mountPath: /var/contracts
+      volumes:
+        - name: s3-contracts
+          persistentVolumeClaim:
+            claimName: s3-contracts-pvc

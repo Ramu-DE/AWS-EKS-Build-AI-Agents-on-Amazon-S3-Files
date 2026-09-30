@@ -1,0 +1,27 @@
+# Local env / secrets
+.env
+*.env
+*.pem
+*.key
+kubeconfig*
+.aws/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Saved workshop web pages (may contain PII / copyrighted content)
+*.html
+
+# Build / temp
+*.log
+*.tmp
+/tmp/
+dist/
+build/
+node_modules/
+__pycache__/
+*.pyc

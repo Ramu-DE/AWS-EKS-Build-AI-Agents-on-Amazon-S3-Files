@@ -1,0 +1,55 @@
+# benchmark — benchmarking agent. Mounts the shared volume and reports status to
+# the workflow-streamer. Runs as uid/gid 33 to match S3 Files file ownership.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: benchmark
+  namespace: contracts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: benchmark
+  template:
+    metadata:
+      labels:
+        app: benchmark
+    spec:
+      serviceAccountName: strands-agent-sa
+      securityContext:
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+      containers:
+        - name: benchmark
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-benchmark:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          env:
+            - name: AWS_REGION
+              value: us-west-2
+            - name: PORT
+              value: "8003"
+            - name: WORKFLOW_STREAMER_URL
+              value: http://workflow-streamer.contracts.svc.cluster.local:8001
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: s3-contracts
+              mountPath: /var/contracts
+      volumes:
+        - name: s3-contracts
+          persistentVolumeClaim:
+            claimName: s3-contracts-pvc

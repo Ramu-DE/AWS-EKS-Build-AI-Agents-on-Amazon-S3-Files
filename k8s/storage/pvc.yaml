@@ -1,0 +1,17 @@
+# Shared ReadWriteMany claim backed by S3 Files.
+#
+# ReadWriteMany (RWX) is essential: it lets contract-app, supervisor, validator,
+# risk-assessor, and benchmark all mount THE SAME volume at /var/contracts across
+# different nodes. The 1200Gi request is a logical claim size; S3 Files is elastic.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: s3-contracts-pvc
+  namespace: contracts
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: s3files-sc
+  resources:
+    requests:
+      storage: 1200Gi

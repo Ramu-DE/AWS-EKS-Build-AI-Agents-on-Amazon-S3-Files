@@ -1,0 +1,40 @@
+# contract-frontend — user-facing UI, exposed via a LoadBalancer Service (NLB).
+# Talks to contract-app over the cluster network; does NOT mount the shared volume.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: contract-frontend
+  namespace: contracts
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: contract-frontend
+  template:
+    metadata:
+      labels:
+        app: contract-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: 198645490240.dkr.ecr.us-west-2.amazonaws.com/s3files-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
