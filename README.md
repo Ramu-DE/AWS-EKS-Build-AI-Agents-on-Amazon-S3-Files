@@ -26,6 +26,18 @@ S3 bucket, which in turn drives an event-driven verification workflow.
 
 ---
 
+## Live demo
+
+The animation below is a real terminal recording against the live cluster. It shows:
+all seven workloads running, the NFS mount confirmed on each pod, the UI health probe
+reporting `{"mounted":true}`, a contract PDF generated through the app writing to
+`/var/contracts`, that same file instantly readable from a different agent pod, and
+the file appearing in the backing S3 bucket (~1 min async write-back).
+
+![Live demo — EKS + S3 Files agentic contract pipeline](images/demo.svg)
+
+---
+
 ## Architecture
 
 ### Before — application only
